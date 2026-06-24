@@ -20,7 +20,10 @@ using namespace std;
 #define ID_BTN_CRIAR_USUARIO 203
 #define ID_BTN_ABRIR_CATEGORIA 204
 #define ID_BTN_AUDITORIA 205
-#define ID_BTN_SAIR 206
+#define ID_BTN_EXCLUIR_USUARIO 206
+#define ID_BTN_ALTERAR_SENHA 207
+#define ID_BTN_VER_AUDITORIA 208
+#define ID_BTN_SAIR 209
 
 #define ID_PRODUTO 301
 #define ID_QUANTIDADE 302
@@ -382,11 +385,9 @@ void abrirPainelCoordenador(HWND hwnd) {
 
     hListaCategorias = CreateWindowA("LISTBOX", "", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 20, 85, 350, 250, hwnd, (HMENU)ID_LISTA_CATEGORIAS, NULL, NULL);
 
-    CreateWindowA("BUTTON", "Criar Categoria", WS_VISIBLE | WS_CHILD, 400, 85, 160, 30, hwnd, (HMENU)ID_BTN_CRIAR_CATEGORIA, NULL, NULL);
-    CreateWindowA("BUTTON", "Criar Usuario", WS_VISIBLE | WS_CHILD, 400, 125, 160, 30, hwnd, (HMENU)ID_BTN_CRIAR_USUARIO, NULL, NULL);
-    CreateWindowA("BUTTON", "Abrir Categoria", WS_VISIBLE | WS_CHILD, 400, 165, 160, 30, hwnd, (HMENU)ID_BTN_ABRIR_CATEGORIA, NULL, NULL);
-    CreateWindowA("BUTTON", "Auditoria", WS_VISIBLE | WS_CHILD, 400, 205, 160, 30, hwnd, (HMENU)ID_BTN_AUDITORIA, NULL, NULL);
-    CreateWindowA("BUTTON", "Sair", WS_VISIBLE | WS_CHILD, 400, 245, 160, 30, hwnd, (HMENU)ID_BTN_SAIR, NULL, NULL);
+    CreateWindowA("BUTTON", "Abrir Categoria", WS_VISIBLE | WS_CHILD, 400, 85, 160, 30, hwnd, (HMENU)ID_BTN_ABRIR_CATEGORIA, NULL, NULL);
+    CreateWindowA("BUTTON", "Auditoria", WS_VISIBLE | WS_CHILD, 400, 125, 160, 30, hwnd, (HMENU)ID_BTN_AUDITORIA, NULL, NULL);
+    CreateWindowA("BUTTON", "Sair", WS_VISIBLE | WS_CHILD, 400, 165, 160, 30, hwnd, (HMENU)ID_BTN_SAIR, NULL, NULL);
 
     carregarListaCategorias();
 }
@@ -406,8 +407,8 @@ void abrirTelaSolicitacoes(HWND hwnd, const string& categoria) {
     CreateWindowA("STATIC", "Quantidade:", WS_VISIBLE | WS_CHILD, 20, 95, 100, 20, hwnd, NULL, NULL, NULL);
     hQuantidade = CreateWindowA("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 120, 95, 90, 22, hwnd, (HMENU)ID_QUANTIDADE, NULL, NULL);
 
-   CreateWindowA("STATIC", "Medida:", WS_VISIBLE | WS_CHILD, 205, 95, 100, 20, hwnd, NULL, NULL, NULL);
-   hUnidadeMedida = CreateWindowA("COMBOBOX", "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_DROPDOWNLIST, 250, 95, 110, 200, hwnd, (HMENU)ID_UNIDADE_MEDIDA, NULL, NULL);
+   CreateWindowA("STATIC", "Medida:", WS_VISIBLE | WS_CHILD, 220, 95, 100, 20, hwnd, NULL, NULL, NULL);
+   hUnidadeMedida = CreateWindowA("COMBOBOX", "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_DROPDOWNLIST, 280, 95, 110, 200, hwnd, (HMENU)ID_UNIDADE_MEDIDA, NULL, NULL);
 
     vector<string> unidades = carregarUnidadesMedidaPorCategoria(categoria);
     for (size_t i = 0; i < unidades.size(); i++) {
@@ -470,50 +471,16 @@ void abrirTelaAuditoria(HWND hwnd) {
 
     limparJanela(hwnd);
 
-    CreateWindowA("STATIC", "Auditoria de Solicitacoes", WS_VISIBLE | WS_CHILD, 20, 20, 300, 20, hwnd, NULL, NULL, NULL);
-    CreateWindowA("BUTTON", "Voltar", WS_VISIBLE | WS_CHILD, 480, 20, 100, 30, hwnd, (HMENU)ID_BTN_VOLTAR, NULL, NULL);
+    CreateWindowA("STATIC", "Administracao do Coordenador", WS_VISIBLE | WS_CHILD, 20, 20, 300, 20, hwnd, NULL, NULL, NULL);
 
-    hListaSolicitacoes = CreateWindowA("LISTBOX", "", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 20, 65, 580, 320, hwnd, (HMENU)ID_LISTA_SOLICITACOES, NULL, NULL);
+    CreateWindowA("BUTTON", "Criar Categoria", WS_VISIBLE | WS_CHILD, 40, 70, 180, 35, hwnd, (HMENU)ID_BTN_CRIAR_CATEGORIA, NULL, NULL);
+    CreateWindowA("BUTTON", "Criar Usuario", WS_VISIBLE | WS_CHILD, 40, 115, 180, 35, hwnd, (HMENU)ID_BTN_CRIAR_USUARIO, NULL, NULL);
+    CreateWindowA("BUTTON", "Alterar Senha", WS_VISIBLE | WS_CHILD, 40, 160, 180, 35, hwnd, (HMENU)ID_BTN_ALTERAR_SENHA, NULL, NULL);
+    CreateWindowA("BUTTON", "Excluir Usuario", WS_VISIBLE | WS_CHILD, 40, 205, 180, 35, hwnd, (HMENU)ID_BTN_EXCLUIR_USUARIO, NULL, NULL);
 
-    bool encontrou = false;
-    ifstream auditoriaLogin(ARQUIVO_AUDITORIA_COORDENADOR);
-    string linhaAuditoria;
+    CreateWindowA("BUTTON", "Ver Auditoria", WS_VISIBLE | WS_CHILD, 260, 70, 180, 35, hwnd, (HMENU)ID_BTN_VER_AUDITORIA, NULL, NULL);
 
-    while (getline(auditoriaLogin, linhaAuditoria)) {
-        encontrou = true;
-        adicionarLista(hListaSolicitacoes, linhaAuditoria);
-    }
-
-    auditoriaLogin.close();
-
-    vector<string> categorias = carregarCategoriasParaUsuario(usuarioLogado);
-
-    for (size_t i = 0; i < categorias.size(); i++) {
-        ifstream arquivo(arquivoSolicitacoes(categorias[i]).c_str(), ios::binary);
-        Solicitacao s;
-
-        while (arquivo.read(reinterpret_cast<char*>(&s), sizeof(Solicitacao))) {
-            encontrou = true;
-
-            stringstream ss;
-            ss << "[" << categorias[i] << "] "
-               << "ID: " << s.id
-               << " | Produto: " << s.produto
-               << " | Qtd: " << s.quantidade
-               << " | Unid.: " << s.unidadeMedida
-               << " | Criado em: " << s.criadoEm
-               << " | Criado por: " << s.criadoPor
-               << " | Desc: " << s.descricao;
-
-            adicionarLista(hListaSolicitacoes, ss.str());
-        }
-
-        arquivo.close();
-    }
-
-    if (!encontrou) {
-        adicionarLista(hListaSolicitacoes, "Nenhum registro de auditoria encontrado.");
-    }
+    CreateWindowA("BUTTON", "Voltar", WS_VISIBLE | WS_CHILD, 260, 205, 180, 35, hwnd, (HMENU)ID_BTN_VOLTAR, NULL, NULL);
 }
 
 void salvarCategoria(HWND hwnd) {
@@ -662,20 +629,71 @@ void abrirTelaLogin(HWND hwnd) {
 
     limparJanela(hwnd);
 
-    CreateWindowA("STATIC", "Selecione o usuario desejado", WS_VISIBLE | WS_CHILD, 20, 20, 220, 20, hwnd, NULL, NULL, NULL);
-    CreateWindowA("STATIC", "Usuarios cadastrados:", WS_VISIBLE | WS_CHILD, 20, 55, 150, 20, hwnd, NULL, NULL, NULL);
-    hListaUsuariosLogin = CreateWindowA("LISTBOX", "", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 20, 80, 220, 260, hwnd, (HMENU)ID_LISTA_USUARIOS_LOGIN, NULL, NULL);
+    CreateWindowA(
+        "STATIC",
+        "Selecione seu usuario na lista, digite a senha e clique em Entrar.",
+        WS_VISIBLE | WS_CHILD,
+        20, 20, 520, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL
+    );
 
-    CreateWindowA("STATIC", "Seu login:", WS_VISIBLE | WS_CHILD, 280, 90, 100, 20, hwnd, NULL, NULL, NULL);
-    hLoginUsuario = CreateWindowA("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 390, 90, 180, 22, hwnd, (HMENU)ID_LOGIN_IDENTIFICACAO, NULL, NULL);
-    hLoginIdentificacao = hLoginUsuario;
+    CreateWindowA(
+        "STATIC",
+        "Usuarios cadastrados:",
+        WS_VISIBLE | WS_CHILD,
+        20, 55, 180, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL
+    );
 
-    CreateWindowA("STATIC", "Senha:", WS_VISIBLE | WS_CHILD, 280, 130, 100, 20, hwnd, NULL, NULL, NULL);
-    hLoginSenha = CreateWindowA("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_PASSWORD, 390, 130, 180, 22, hwnd, (HMENU)ID_LOGIN_SENHA, NULL, NULL);
+    hListaUsuariosLogin = CreateWindowA(
+        "LISTBOX",
+        "",
+        WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL,
+        20, 80, 250, 260,
+        hwnd,
+        (HMENU)ID_LISTA_USUARIOS_LOGIN,
+        NULL,
+        NULL
+    );
 
-    CreateWindowA("BUTTON", "Entrar", WS_VISIBLE | WS_CHILD, 390, 175, 100, 30, hwnd, (HMENU)ID_BTN_ENTRAR, NULL, NULL);
+    CreateWindowA(
+        "STATIC",
+        "Senha:",
+        WS_VISIBLE | WS_CHILD,
+        310, 110, 100, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL
+    );
 
-    CreateWindowA("STATIC", "Login coordenador: coordenador", WS_VISIBLE | WS_CHILD, 280, 225, 220, 20, hwnd, NULL, NULL, NULL);
+    hLoginSenha = CreateWindowA(
+        "EDIT",
+        "",
+        WS_VISIBLE | WS_CHILD | WS_BORDER | ES_PASSWORD,
+        390, 110, 180, 22,
+        hwnd,
+        (HMENU)ID_LOGIN_SENHA,
+        NULL,
+        NULL
+    );
+
+    CreateWindowA(
+        "BUTTON",
+        "Entrar",
+        WS_VISIBLE | WS_CHILD,
+        390, 155, 100, 30,
+        hwnd,
+        (HMENU)ID_BTN_ENTRAR,
+        NULL,
+        NULL
+    );
 
     carregarListaUsuariosLogin();
 }
@@ -834,7 +852,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow) {
         0,
         CLASS_NAME,
         "Sistema de Solicitacoes por Categoria",
-        WS_OVERLAPPEDWINDOW,
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         650,
