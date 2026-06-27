@@ -6,6 +6,7 @@
 #include <ctime>
 #include <direct.h>
 #include <cstring>
+#include <cstdio>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ using namespace std;
 #define ID_BTN_ENTRAR 103
 #define ID_LISTA_USUARIOS_LOGIN 104
 #define ID_LOGIN_IDENTIFICACAO 105
+#define ID_BTN_MANUAL 106
 
 #define ID_LISTA_CATEGORIAS 201
 #define ID_BTN_CRIAR_CATEGORIA 202
@@ -35,6 +37,7 @@ using namespace std;
 #define ID_LISTA_SOLICITACOES 306
 #define ID_BTN_VOLTAR 307
 #define ID_UNIDADE_MEDIDA 308
+#define ID_BTN_EXCLUIR_SOLICITACAO 309
 
 #define ID_NOVA_CATEGORIA 401
 #define ID_BTN_CONFIRMAR_CATEGORIA 402
@@ -76,6 +79,7 @@ HWND hNovaCategoria, hNovoLogin, hNovaSenha, hCategoriaUsuario;
 HWND hListaUsuariosLogin, hLoginIdentificacao;
 HWND hListaUsuariosAdmin, hSenhaAlterada;
 HWND hListaUsuariosExcluir;
+HWND hListaAuditoria;
 
 Usuario usuarioLogado;
 string categoriaAtual = "";
@@ -365,6 +369,7 @@ vector<string> carregarUnidadesMedidaPorCategoria(const string &categoria)
     else if (categoria == "Tecnologia")
     {
         unidades.push_back("UNIDADE");
+        unidades.push_back("PENTE");
         unidades.push_back("KIT");
         unidades.push_back("CAIXA");
         unidades.push_back("PACOTE");
@@ -468,7 +473,102 @@ int proximoIdCategoria(const string &categoria)
 }
 
 void abrirTelaLogin(HWND hwnd);
+void abrirTelaManual(HWND hwnd);
 void abrirTelaAuditoria(HWND hwnd);
+void abrirTelaVerAuditoria(HWND hwnd);
+
+vector<string> carregarTodasCategoriasDoSistema()
+{
+    vector<string> categorias;
+    categorias.push_back("Cozinha");
+    categorias.push_back("Tecnologia");
+    categorias.push_back("Papelaria");
+
+    string caminhoBusca = string("dados\\categorias\\*");
+
+    WIN32_FIND_DATAA dadosArquivo;
+    HANDLE hBusca = FindFirstFileA(caminhoBusca.c_str(), &dadosArquivo);
+
+    if (hBusca != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            string nome = dadosArquivo.cFileName;
+
+            if ((dadosArquivo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                nome != "." &&
+                nome != "..")
+            {
+                bool jaExiste = false;
+
+                for (size_t i = 0; i < categorias.size(); i++)
+                {
+                    if (categorias[i] == nome)
+                    {
+                        jaExiste = true;
+                        break;
+                    }
+                }
+
+                if (!jaExiste)
+                {
+                    categorias.push_back(nome);
+                }
+            }
+
+        } while (FindNextFileA(hBusca, &dadosArquivo));
+
+        FindClose(hBusca);
+    }
+
+    return categorias;
+}
+
+int excluirSolicitacoesDoUsuario(const string &loginExcluido)
+{
+    int quantidadeExcluida = 0;
+    vector<string> categorias = carregarTodasCategoriasDoSistema();
+
+    for (size_t i = 0; i < categorias.size(); i++)
+    {
+        string arquivoCategoria = arquivoSolicitacoes(categorias[i]);
+        ifstream entrada(arquivoCategoria.c_str(), ios::binary);
+
+        if (!entrada)
+        {
+            continue;
+        }
+
+        vector<Solicitacao> solicitacoesMantidas;
+        Solicitacao s;
+
+        while (entrada.read(reinterpret_cast<char *>(&s), sizeof(Solicitacao)))
+        {
+            if (string(s.criadoPor) == loginExcluido)
+            {
+                quantidadeExcluida++;
+            }
+            else
+            {
+                solicitacoesMantidas.push_back(s);
+            }
+        }
+
+        entrada.close();
+
+        ofstream saida(arquivoCategoria.c_str(), ios::binary | ios::trunc);
+
+        for (size_t j = 0; j < solicitacoesMantidas.size(); j++)
+        {
+            saida.write(reinterpret_cast<const char *>(&solicitacoesMantidas[j]), sizeof(Solicitacao));
+        }
+
+        saida.close();
+    }
+
+    return quantidadeExcluida;
+}
+
 void excluirUsuarioSelecionado(HWND hwnd);
 
 void abrirPainelCoordenador(HWND hwnd)
@@ -528,6 +628,32 @@ void abrirTelaSolicitacoes(HWND hwnd, const string &categoria)
     CreateWindowA("BUTTON", "Salvar Solicitacao", WS_VISIBLE | WS_CHILD, 450, 60, 150, 30, hwnd, (HMENU)ID_BTN_SALVAR_SOLICITACAO, NULL, NULL);
     CreateWindowA("BUTTON", "Listar", WS_VISIBLE | WS_CHILD, 450, 100, 150, 30, hwnd, (HMENU)ID_BTN_LISTAR_SOLICITACOES, NULL, NULL);
     CreateWindowA("BUTTON", "Voltar", WS_VISIBLE | WS_CHILD, 450, 140, 150, 30, hwnd, (HMENU)ID_BTN_VOLTAR, NULL, NULL);
+
+    if (usuarioLogado.coordenador == 1)
+    {
+        CreateWindowA(
+            "STATIC",
+            "Dica: antes de excluir, clique em Listar e selecione uma solicitacao.",
+            WS_VISIBLE | WS_CHILD,
+            20, 390, 590, 20,
+            hwnd,
+            NULL,
+            NULL,
+            NULL);
+    }
+
+    if (usuarioLogado.coordenador == 1)
+    {
+        CreateWindowA(
+            "BUTTON",
+            "Excluir Solicitacao",
+            WS_VISIBLE | WS_CHILD,
+            450, 180, 150, 30,
+            hwnd,
+            (HMENU)ID_BTN_EXCLUIR_SOLICITACAO,
+            NULL,
+            NULL);
+    }
 
     hListaSolicitacoes = CreateWindowA(
         "LISTBOX",
@@ -707,8 +833,15 @@ void excluirUsuarioSelecionado(HWND hwnd)
 
     if (excluiu)
     {
+        int solicitacoesExcluidas = excluirSolicitacoesDoUsuario(loginSelecionado);
         salvarUsuariosCadastrados(usuariosAtualizados);
-        MessageBoxA(hwnd, "Usuario excluido com sucesso.", "Sucesso", MB_OK | MB_ICONINFORMATION);
+
+        stringstream mensagem;
+        mensagem << "Usuario excluido com sucesso."
+                 << "\nSolicitacoes removidas deste usuario: "
+                 << solicitacoesExcluidas;
+
+        MessageBoxA(hwnd, mensagem.str().c_str(), "Sucesso", MB_OK | MB_ICONINFORMATION);
         abrirTelaAuditoria(hwnd);
     }
     else
@@ -733,6 +866,57 @@ void abrirTelaAuditoria(HWND hwnd)
     CreateWindowA("BUTTON", "Voltar", WS_VISIBLE | WS_CHILD, 55, 370, 180, 35, hwnd, (HMENU)ID_BTN_VOLTAR, NULL, NULL);
 
     CreateWindowA("BUTTON", "Ver Auditoria", WS_VISIBLE | WS_CHILD, 410, 370, 180, 35, hwnd, (HMENU)ID_BTN_VER_AUDITORIA, NULL, NULL);
+}
+
+void abrirTelaVerAuditoria(HWND hwnd)
+{
+    telaAtual = 8;
+
+    limparJanela(hwnd);
+
+    CreateWindowA("STATIC", "Auditoria de Acesso ao Coordenador", WS_VISIBLE | WS_CHILD, 20, 20, 350, 20, hwnd, NULL, NULL, NULL);
+
+    hListaAuditoria = CreateWindowA(
+        "LISTBOX",
+        "",
+        WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | WS_HSCROLL,
+        20, 55, 580, 310,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    SendMessageA(hListaAuditoria, LB_SETHORIZONTALEXTENT, 1200, 0);
+
+    ifstream arquivo(ARQUIVO_AUDITORIA_COORDENADOR);
+
+    if (!arquivo)
+    {
+        adicionarLista(hListaAuditoria, "Nenhum registro de auditoria encontrado.");
+    }
+    else
+    {
+        string linha;
+        bool encontrou = false;
+
+        while (getline(arquivo, linha))
+        {
+            if (!linha.empty())
+            {
+                adicionarLista(hListaAuditoria, linha);
+                encontrou = true;
+            }
+        }
+
+        arquivo.close();
+
+        if (!encontrou)
+        {
+            adicionarLista(hListaAuditoria, "Nenhum registro de auditoria encontrado.");
+        }
+    }
+
+    CreateWindowA("BUTTON", "Voltar", WS_VISIBLE | WS_CHILD, 240, 385, 140, 30, hwnd, (HMENU)ID_BTN_VOLTAR, NULL, NULL);
 }
 
 void salvarCategoria(HWND hwnd)
@@ -938,6 +1122,83 @@ void listarSolicitacoes()
     }
 }
 
+void excluirSolicitacaoSelecionada(HWND hwnd)
+{
+    if (usuarioLogado.coordenador != 1)
+    {
+        MessageBoxA(hwnd, "Apenas o coordenador pode excluir solicitacoes.", "Acesso negado", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    int indiceSelecionado = SendMessageA(hListaSolicitacoes, LB_GETCURSEL, 0, 0);
+
+    if (indiceSelecionado == LB_ERR)
+    {
+        MessageBoxA(hwnd, "Selecione uma solicitacao para excluir.", "Aviso", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    int resposta = MessageBoxA(
+        hwnd,
+        "Tem certeza que deseja excluir esta solicitacao?",
+        "Confirmar exclusao",
+        MB_YESNO | MB_ICONQUESTION);
+
+    if (resposta != IDYES)
+    {
+        return;
+    }
+
+    ifstream entrada(arquivoSolicitacoes(categoriaAtual).c_str(), ios::binary);
+
+    if (!entrada)
+    {
+        MessageBoxA(hwnd, "Nao foi possivel abrir o arquivo de solicitacoes.", "Erro", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    vector<Solicitacao> solicitacoesMantidas;
+    Solicitacao s;
+
+    int indiceAtual = 0;
+    bool excluiu = false;
+
+    while (entrada.read(reinterpret_cast<char *>(&s), sizeof(Solicitacao)))
+    {
+        if (indiceAtual == indiceSelecionado)
+        {
+            excluiu = true;
+        }
+        else
+        {
+            solicitacoesMantidas.push_back(s);
+        }
+
+        indiceAtual++;
+    }
+
+    entrada.close();
+
+    if (!excluiu)
+    {
+        MessageBoxA(hwnd, "Nao foi possivel localizar a solicitacao selecionada.", "Erro", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    ofstream saida(arquivoSolicitacoes(categoriaAtual).c_str(), ios::binary | ios::trunc);
+
+    for (size_t i = 0; i < solicitacoesMantidas.size(); i++)
+    {
+        saida.write(reinterpret_cast<char *>(&solicitacoesMantidas[i]), sizeof(Solicitacao));
+    }
+
+    saida.close();
+
+    MessageBoxA(hwnd, "Solicitacao excluida com sucesso.", "Sucesso", MB_OK | MB_ICONINFORMATION);
+
+    listarSolicitacoes();
+}
+
 void abrirTelaLogin(HWND hwnd)
 {
     telaAtual = 0;
@@ -1005,7 +1266,134 @@ void abrirTelaLogin(HWND hwnd)
         NULL,
         NULL);
 
+    CreateWindowA(
+        "BUTTON",
+        "?",
+        WS_VISIBLE | WS_CHILD,
+        590, 400, 35, 30,
+        hwnd,
+        (HMENU)ID_BTN_MANUAL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "github.com/sawkjz",
+        WS_VISIBLE | WS_CHILD,
+        20, 405, 230, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
     carregarListaUsuariosLogin();
+}
+
+void abrirTelaManual(HWND hwnd)
+{
+    telaAtual = 9;
+
+    limparJanela(hwnd);
+
+    CreateWindowA(
+        "STATIC",
+        "Manual do sistema",
+        WS_VISIBLE | WS_CHILD,
+        20, 20, 250, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "1. Selecione seu usuario na lista, digite a senha e clique em Entrar.",
+        WS_VISIBLE | WS_CHILD,
+        20, 60, 580, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "2. Usuarios comuns podem criar e listar solicitacoes da propria categoria.",
+        WS_VISIBLE | WS_CHILD,
+        20, 90, 580, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "3. Abrir categorias, criar usuarios e consultar auditoria. /c.",
+        WS_VISIBLE | WS_CHILD,
+        20, 120, 580, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "4. Para excluir uma solicitacao, primeiro clique em Listar, selecione uma solicitacao. /c",
+        WS_VISIBLE | WS_CHILD,
+        20, 150, 600, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "   e depois clique em Excluir Solicitacao.",
+        WS_VISIBLE | WS_CHILD,
+        20, 175, 600, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "5. Ao excluir um usuario, as solicitacoes criadas por ele tambem sao removidas.",
+        WS_VISIBLE | WS_CHILD,
+        20, 210, 580, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "6. A auditoria registra tentativas incorretas de acesso ao coordenador.",
+        WS_VISIBLE | WS_CHILD,
+        20, 240, 580, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "STATIC",
+        "Criado por Isadora",
+        WS_VISIBLE | WS_CHILD,
+        20, 320, 200, 20,
+        hwnd,
+        NULL,
+        NULL,
+        NULL);
+
+    CreateWindowA(
+        "BUTTON",
+        "Voltar",
+        WS_VISIBLE | WS_CHILD,
+        250, 350, 130, 30,
+        hwnd,
+        (HMENU)ID_BTN_VOLTAR,
+        NULL,
+        NULL);
 }
 
 void selecionarCategoriaCoordenador(HWND hwnd)
@@ -1128,10 +1516,14 @@ LRESULT CALLBACK JanelaProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 excluirUsuarioSelecionado(hwnd);
             }
             break;
+
+        case ID_BTN_MANUAL:
+            abrirTelaManual(hwnd);
+            break;
+
         case ID_BTN_ENTRAR:
         {
             Usuario usuarioSelecionado;
-            string loginInformado = getTexto(hLoginIdentificacao);
             string senha = getTexto(hLoginSenha);
 
             if (!obterUsuarioSelecionadoLogin(usuarioSelecionado))
@@ -1155,10 +1547,7 @@ LRESULT CALLBACK JanelaProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 else
                 {
-                    if (loginInformado != "coordenador")
-                    {
-                        registrarTentativaCoordenador(loginInformado);
-                    }
+                    registrarTentativaCoordenador(usuarioSelecionado.login);
 
                     MessageBoxA(hwnd, "Senha incorreta. Verifique sua senha novamente", "Erro", MB_OK | MB_ICONERROR);
                     setTexto(hLoginSenha, "");
@@ -1224,6 +1613,13 @@ LRESULT CALLBACK JanelaProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             abrirTelaExcluirUsuario(hwnd);
             break;
 
+        case ID_BTN_VER_AUDITORIA:
+            if (usuarioLogado.coordenador == 1)
+            {
+                abrirTelaVerAuditoria(hwnd);
+            }
+            break;
+
         case ID_BTN_CONFIRMAR_CATEGORIA:
             if (usuarioLogado.coordenador == 1)
             {
@@ -1246,7 +1642,16 @@ LRESULT CALLBACK JanelaProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             listarSolicitacoes();
             break;
 
+        case ID_BTN_EXCLUIR_SOLICITACAO:
+            excluirSolicitacaoSelecionada(hwnd);
+            break;
+
         case ID_BTN_VOLTAR:
+            if (telaAtual == 9)
+            {
+                abrirTelaLogin(hwnd);
+                break;
+            }
             if (usuarioLogado.coordenador == 1)
             {
                 if (telaAtual == 3 || telaAtual == 4 || telaAtual == 6 || telaAtual == 7 || telaAtual == 8)
