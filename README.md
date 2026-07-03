@@ -2,7 +2,7 @@
 
 Aplicação desktop para Windows desenvolvida em **C++ puro**, com interface gráfica nativa feita em **WinAPI**.
 
-O sistema organiza solicitações internas por categoria, permitindo que usuários registrem pedidos de itens e que um usuário coordenador acompanhe, gerencie e audite as informações cadastradas. O mesmo também não necessita de conexão com a internet, garantindo mais segurança e uma experiência simples e confiável.
+Organiza solicitações internas por categoria, permite o gerenciamento pelo coordenador e funciona sem internet, garantindo mais segurança e confiabilidade.
 
 ## Funcionalidades
 
