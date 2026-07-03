@@ -1,21 +1,73 @@
-VERSAO WINDOWS - C++ RAIZ COM JANELA NATIVA
+SISTEMA DE SOLICITACOES POR CATEGORIA
 
-Esta versao usa WinAPI puro.
-Nao usa Qt, wxWidgets, SDL, banco instalado nem biblioteca externa.
-Depois de compilado, o sistema_windows.exe abre direto no Windows.
+Aplicacao desktop para Windows desenvolvida em C++ puro, com interface grafica nativa feita em WinAPI.
 
-Como compilar no Windows, se tiver g++/MinGW:
+O sistema organiza solicitacoes internas por categoria, permitindo que usuarios registrem pedidos de itens e que um usuario coordenador acompanhe, gerencie e audite as informacoes cadastradas.
+
+FUNCIONALIDADES
+
+- Login por usuario cadastrado.
+- Usuario coordenador com acesso administrativo.
+- Cadastro de usuarios vinculados a uma categoria.
+- Cadastro, abertura e exclusao de categorias.
+- Registro de solicitacoes com produto, quantidade, unidade de medida e descricao.
+- Listagem de solicitacoes por categoria.
+- Exclusao de solicitacoes selecionadas.
+- Alteracao de senha de usuarios pelo coordenador.
+- Exclusao de usuarios pelo coordenador.
+- Auditoria de tentativas incorretas de acesso ao usuario coordenador.
+- Manual de uso simples dentro da propria interface.
+
+PERFIS DE ACESSO
+
+O coordenador acessa o painel administrativo, onde pode gerenciar categorias, usuarios, senhas, exclusoes e auditoria.
+
+Usuarios comuns acessam diretamente a tela da propria categoria, onde podem cadastrar, listar e excluir solicitacoes.
+
+ESTRUTURA DE DADOS
+
+O projeto nao utiliza banco de dados instalado. As informacoes sao armazenadas localmente em arquivos dentro da pasta dados.
+
+- dados/usuarios.bin: usuarios cadastrados.
+- dados/categorias/<categoria>/solicitacoes.bin: solicitacoes de cada categoria.
+- dados/categorias/<categoria>/nextid.txt: controle do proximo ID de solicitacao.
+- dados/auditoria_login_coordenador.txt: registros de tentativas incorretas de acesso ao coordenador.
+
+CATEGORIAS PADRAO
+
+O sistema trabalha inicialmente com as categorias Cozinha, Tecnologia e Papelaria. Novas categorias tambem podem ser criadas pelo coordenador.
+
+TECNOLOGIAS UTILIZADAS
+
+- C++
+- WinAPI
+- MinGW/g++
+- Arquivos binarios locais
+
+COMO COMPILAR NO WINDOWS
+
+Com o g++/MinGW instalado, execute:
+
 g++ main.cpp -o sistema_windows.exe -mwindows -static
 
-Ou de dois cliques em:
-compilar_windows.bat
+Ou execute o arquivo:
 
-Como compilar no Linux para gerar EXE de Windows:
-./compilar_no_linux_para_windows.sh
+compilador.bat
 
-Observacao sincera:
-Para gerar o .exe de Windows a partir do Linux, o Linux precisa ter o compilador x86_64-w64-mingw32-g++.
-Nesta maquina onde o arquivo foi montado, esse compilador nao estava disponivel, entao deixei a fonte e os scripts prontos.
+COMO COMPILAR NO LINUX PARA GERAR EXE DE WINDOWS
 
-O arquivo clientes.bin sera criado automaticamente na mesma pasta do .exe.
-Ele funciona como o banco de dados local/binario.
+Execute:
+
+./compilador_linux.sh
+
+Para gerar o executavel Windows a partir do Linux, e necessario ter o compilador x86_64-w64-mingw32-g++ instalado.
+
+EXECUCAO
+
+Depois de compilado, abra o arquivo sistema_windows.exe no Windows.
+
+Na primeira execucao, o sistema cria automaticamente as pastas e arquivos necessarios dentro de dados.
+
+AUTORA
+
+@sawkjz
