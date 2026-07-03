@@ -22,18 +22,11 @@ Organiza solicitações internas por categoria, permite o gerenciamento pelo coo
 
 O **coordenador** acessa o painel administrativo, onde pode gerenciar categorias, usuários, senhas, exclusões e auditoria.
 
-Os **usuários comuns** acessam diretamente a tela da própria categoria, onde podem cadastrar, listar e excluir solicitações.
+Os **usuários comuns** acessam diretamente a tela da própria categoria, onde podem cadastrar e listar solicitações.
 
 ## Estrutura de Dados
 
-O projeto não utiliza banco de dados instalado. As informações são armazenadas localmente em arquivos dentro da pasta `dados`.
-
-| Arquivo | Finalidade |
-|---|---|
-| `dados/usuarios.bin` | Armazena os usuários cadastrados. |
-| `dados/categorias/<categoria>/solicitacoes.bin` | Armazena as solicitações de cada categoria. |
-| `dados/categorias/<categoria>/nextid.txt` | Controla o próximo ID de solicitação. |
-| `dados/auditoria_login_coordenador.txt` | Registra tentativas incorretas de acesso ao coordenador. |
+O projeto não utiliza banco de dados instalado. As informações são armazenadas localmente em arquivos dentro de uma pasta chamada `dados`.
 
 ## Categorias Padrão
 
@@ -50,7 +43,6 @@ Novas categorias também podem ser criadas pelo coordenador.
 - C++
 - WinAPI
 - MinGW/g++
-- Arquivos binários locais
 
 ## Compatibilidade
 
